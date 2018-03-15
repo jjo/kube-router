@@ -451,7 +451,16 @@ func (nrc *NetworkRoutingController) getIpsToAdvertise(verifyEndpoints bool) ([]
 					glog.Errorf("error determining if node has endpoints for svc: %q error: %v", svc.Name, err)
 					continue
 				}
+				if !nodeHasEndpoints {
+					for _, externalIP := range svc.Spec.ExternalIPs {
+						err := nrc.UnadvertiseClusterIp(externalIP)
+						if err != nil {
+							glog.Errorf("error unadvertising external IP: %q, error: %v", externalIP, err)
+						}
+					}
 
+					continue
+				}
 			}
 		}
 		if nrc.advertiseClusterIp {
