@@ -185,7 +185,12 @@ func Test_advertiseClusterIPs(t *testing.T) {
 			}
 
 			waitForListerWithTimeout(time.Second*10, t)
-			testcase.nrc.advertiseClusterIPs()
+			// ClusterIPs
+			testcase.nrc.advertiseClusterIp = true
+			testcase.nrc.advertiseExternalIp = false
+			testcase.nrc.advertiseLoadBalancerIp = false
+			toAdvertise, toUnAdvertise, _ := testcase.nrc.getIpsToAdvertise(false)
+			testcase.nrc.advertiseIPs(toAdvertise, toUnAdvertise)
 
 			watchEvents := waitForBGPWatchEventWithTimeout(time.Second*10, len(testcase.watchEvents), w, t)
 			for _, watchEvent := range watchEvents {
@@ -349,7 +354,7 @@ func Test_advertiseExternalIPs(t *testing.T) {
 			},
 		},
 		{
-			"add bgp path to loadbalancerIP for service with LoadBalancer IP and proper annotation",
+			"add bgp path to loadbalancerIP for service with LoadBalancer IP",
 			&NetworkRoutingController{
 				bgpServer: gobgp.NewBgpServer(),
 			},
@@ -385,7 +390,7 @@ func Test_advertiseExternalIPs(t *testing.T) {
 			},
 		},
 		{
-			"no bgp path to nil loadbalancerIPs for service with LoadBalancer and proper annotation",
+			"no bgp path to nil loadbalancerIPs for service with LoadBalancer",
 			&NetworkRoutingController{
 				bgpServer: gobgp.NewBgpServer(),
 			},
@@ -411,7 +416,7 @@ func Test_advertiseExternalIPs(t *testing.T) {
 			map[string]bool{},
 		},
 		{
-			"no bgp path to loadbalancerIPs for service with LoadBalancer and no annotation",
+			"no bgp path to loadbalancerIPs for service with LoadBalancer and skiplbips annotation",
 			&NetworkRoutingController{
 				bgpServer: gobgp.NewBgpServer(),
 			},
@@ -419,6 +424,9 @@ func Test_advertiseExternalIPs(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "svc-1",
+						Annotations: map[string]string{
+							"kube-router.io/service.skiplbips": "true",
+						},
 					},
 					Spec: v1core.ServiceSpec{
 						Type:      "LoadBalancer",
@@ -471,7 +479,12 @@ func Test_advertiseExternalIPs(t *testing.T) {
 			}
 
 			waitForListerWithTimeout(time.Second*10, t)
-			testcase.nrc.advertiseExternalIPs()
+			// ExternalIPs
+			testcase.nrc.advertiseClusterIp = false
+			testcase.nrc.advertiseExternalIp = true
+			testcase.nrc.advertiseLoadBalancerIp = true
+			toAdvertise, toUnAdvertise, _ := testcase.nrc.getIpsToAdvertise(false)
+			testcase.nrc.advertiseIPs(toAdvertise, toUnAdvertise)
 
 			watchEvents := waitForBGPWatchEventWithTimeout(time.Second*10, len(testcase.watchEvents), w, t)
 			for _, watchEvent := range watchEvents {
