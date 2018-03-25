@@ -402,7 +402,6 @@ func (nrc *NetworkRoutingController) getClusterIp(svc *v1core.Service) string {
 			clusterIp = svc.Spec.ClusterIP
 		}
 	}
-	// glog.Errorf("jjo: getClusterIp(): %v", clusterIp)
 	return clusterIp
 }
 
@@ -415,7 +414,6 @@ func (nrc *NetworkRoutingController) getExternalIps(svc *v1core.Service) []strin
 			externalIpList = append(externalIpList, svc.Spec.ExternalIPs...)
 		}
 	}
-	// glog.Errorf("jjo: getExternalIps(): %v", externalIpList)
 	return externalIpList
 }
 
@@ -432,7 +430,6 @@ func (nrc *NetworkRoutingController) getLoadBalancerIps(svc *v1core.Service) []s
 			}
 		}
 	}
-	// glog.Errorf("jjo: getLoadBalancerIps(): %v", loadBalancerIpList)
 	return loadBalancerIpList
 }
 
@@ -442,23 +439,12 @@ func (nrc *NetworkRoutingController) getIpsToAdvertise(verifyEndpoints bool) ([]
 	for _, svc := range watchers.ServiceWatcher.List() {
 		ipList := make([]string, 0)
 		var err error
-		// glog.Errorf("jjo: svc: %v", svc)
 		nodeHasEndpoints := true
 		if verifyEndpoints {
 			if svc.Spec.ExternalTrafficPolicy == v1core.ServiceExternalTrafficPolicyTypeLocal {
 				nodeHasEndpoints, err = nrc.nodeHasEndpointsForService(svc)
 				if err != nil {
 					glog.Errorf("error determining if node has endpoints for svc: %q error: %v", svc.Name, err)
-					continue
-				}
-				if !nodeHasEndpoints {
-					for _, externalIP := range svc.Spec.ExternalIPs {
-						err := nrc.UnadvertiseClusterIp(externalIP)
-						if err != nil {
-							glog.Errorf("error unadvertising external IP: %q, error: %v", externalIP, err)
-						}
-					}
-
 					continue
 				}
 			}
@@ -481,20 +467,17 @@ func (nrc *NetworkRoutingController) getIpsToAdvertise(verifyEndpoints bool) ([]
 			ipsToUnAdvertise = append(ipsToUnAdvertise, ipList...)
 		}
 	}
-	// glog.Errorf("jjo: getIpsToAdvertise: %v, %v", ipsToAdvertise, ipsToUnAdvertise)
 	return ipsToAdvertise, ipsToUnAdvertise, nil
 }
 
 func (nrc *NetworkRoutingController) advertiseIPs(toAdvertise []string, toUnAdvertise []string) error {
 	for _, ip := range toAdvertise {
-		// glog.Errorf("jjo: advertising IP: %q", ip)
 		err := nrc.AdvertiseClusterIp(ip)
 		if err != nil {
 			glog.Errorf("error advertising IP: %q, error: %v", ip, err)
 		}
 	}
 	for _, ip := range toUnAdvertise {
-		// glog.Errorf("jjo: unadvertising IP: %q", ip)
 		err := nrc.UnadvertiseClusterIp(ip)
 		if err != nil {
 			glog.Errorf("error unadvertising IP: %q, error: %v", ip, err)
